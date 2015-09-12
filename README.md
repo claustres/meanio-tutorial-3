@@ -57,6 +57,10 @@ TrackSchema.virtual('geojson')
 });
 ```
 
+### Partie cliente (front-end)
+
+### Mise à jour des routes
+
 ![Figure 1](Figure1.png "Figure 1 : ajout dans la vue listant les chemins les actions d'accès à la vue cartographique ou 3D")
 
 ![Figure 2](Figure2.png "Figure 2 : vue permettant de créer un nouveau chemin ou d'éditer un chemin sélectionné")
@@ -64,9 +68,23 @@ TrackSchema.virtual('geojson')
 
 ## Vue cartographique
 
+### Directive
+
+### Contrôleur
+
+### Vue
+
 ![Figure 3](Figure3.png "Figure 3 : vue cartographique d'un chemin tracé en rouge, le marqueur bleu indiquant le point de départ")
 
 ## Vue 3D
+
+### Service
+
+### Directive
+
+### Contrôleur
+
+### Vue
 
 ![Figure 4](Figure4.png "Figure 4 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
 
