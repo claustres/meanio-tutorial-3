@@ -127,14 +127,15 @@ Pour rappel le formulaire de création ou d'édition d'un chemin (Figure 2) déf
 
 ![Figure 2](Figure2.png "Figure 2 : vue permettant de créer un nouveau chemin ou d'éditer un chemin sélectionné")
 
-
 ## Vue cartographique
 
 La gestion de données cartographiques est un domaine qui nécessite un travail algorithmique important, afin d'assurer des temps d'accès rapides, tant le volume de données peut être conséquent. Imaginez par exemple que l'on couvre aujourd'hui la terre entière avec des images satellite à une résolution de quelques dizaines de centimères. Une telle image sur une zone de 20 kilomètres carrés a une taille qui avoisine le milliard de pixels et pèse plusieurs gigaoctets même compressée. Accéder à une base de données mondiale de ce type nécessite de pouvoir naviguer à travers des dizaines téraoctets de données. Heureusement, des services mettant à disposition de telles données sont aujourd'hui accessibles gratuitement sur internet, comme par exemple [OpenStreetMap](https://www.openstreetmap.org) que nous utiliserons pour nous fournir un fond de carte sur lequel nous viendrons afficher nos tracés GPS.
 
-**TODO** parler de la multirésolution
+Les fonds de carte de ce type sont généralement découpées en tuiles (i.e. images) de petite taille et décomposés sur plusieurs niveaux géographiques (échelles ou niveaux de résolution). L'idée générale pour obtenir un affichage fluide est, en fonction de la zone visualisée par l'utilisateur, d'identifier et de télécharger uniquement les tuiles visibles et dont la résolution est la plus adaptée à l'écran. Les tuiles présentent en général un grand nombre de niveaux de zoom, de la vue mondiale au détail de la rue, mais leur nombre à l'écran dépasse rarement quelques dizaines (Figure 3).
 
-Concernant la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
+![Figure 3](Figure3.png "Figure 3 : Visualisation exagérée des tuiles d'OpenStreetMap autour de Melbourne (Credits "Tiled web map Stevage" by Stevage - Own work. Licensed under CC BY-SA 4.0 via Commons)")
+
+Pour la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
 
 ### Directive
 
@@ -146,7 +147,27 @@ La directive se configure principalement via les attributs suivants :
  * **markers** : liste de marqueurs (i.e. icônes) disposés sur la carte
  * **geojson** : une couche de données au format GeoJSON affichée en surimpression sur la carte
 
-Chaque couche est caractérisée par un nom, un type (i.e. format) et une URL d'accès aux données. Les différentes couches de fond cartographique sont sélectionnables via un menu intégré à la carte (en haut à droite Figure 3).
+Chaque couche est caractérisée par un nom, un type (i.e. format) et une URL d'accès aux données. Les différentes couches de fond cartographique sont sélectionnables via un menu intégré à la carte (en haut à droite Figure 4). Par exemple la couche de base proposée par OpenStreetMap est configuré comme suit :
+```json
+{
+  name: 'OpenStreetMap',
+  type: 'xyz',
+  url: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  layerOptions: {
+      subdomains: ['a', 'b', 'c'],
+      attribution: '© OpenStreetMap contributors',
+      continuousWorld: true
+  }
+}
+```
+Nous utiliserons la couche des marqueurs pour ajouter un simple marqueur indiquant le point de départ du chemin en indiquant ses coordonnées et un message apparaissant sous forme de bulle d'information : 
+```json
+{
+  lat: track.waypoints[1],
+  lng: track.waypoints[0],
+  message: "You are here"
+}
+```
 
 ### Contrôleur
 
@@ -164,7 +185,7 @@ Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin �
 </div>
 ```
 
-![Figure 3](Figure3.png "Figure 3 : vue cartographique d'un chemin tracé en rouge, le marqueur bleu indiquant le point de départ")
+![Figure 4](Figure4.png "Figure 4 : vue cartographique d'un chemin tracé en rouge, le marqueur bleu indiquant le point de départ")
 
 ## Vue 3D
 
@@ -176,7 +197,7 @@ Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin �
 
 ### Vue
 
-![Figure 4](Figure4.png "Figure 4 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
+![Figure 5](Figure5.png "Figure 5 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
 
 ## Conclusion
 
