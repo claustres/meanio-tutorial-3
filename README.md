@@ -133,7 +133,7 @@ La gestion de données cartographiques est un domaine qui nécessite un travail 
 
 Les fonds de carte de ce type sont généralement découpées en tuiles (i.e. images) de petite taille et décomposés sur plusieurs niveaux géographiques (échelles ou niveaux de résolution). L'idée générale pour obtenir un affichage fluide est, en fonction de la zone visualisée par l'utilisateur, d'identifier et de télécharger uniquement les tuiles visibles et dont la résolution est la plus adaptée à l'écran. Les tuiles présentent en général un grand nombre de niveaux de zoom, de la vue mondiale au détail de la rue, mais leur nombre à l'écran dépasse rarement quelques dizaines (Figure 3).
 
-![Figure 3](Figure3.png "Figure 3 : Visualisation exagérée des tuiles d'OpenStreetMap autour de Melbourne (Credits "Tiled web map Stevage" by Stevage - Own work. Licensed under CC BY-SA 4.0 via Commons)")
+![Figure 3](Figure3.png "Figure 3 : Visualisation exagérée des tuiles d'OpenStreetMap autour de Melbourne (Tiled web map Stevage by Stevage - Own work. Licensed under CC BY-SA 4.0 via Commons)")
 
 Pour la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
 
