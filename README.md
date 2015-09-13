@@ -147,22 +147,30 @@ La directive se configure principalement via les attributs suivants :
  * **markers** : liste de marqueurs (i.e. icônes) disposés sur la carte
  * **geojson** : une couche de données au format GeoJSON affichée en surimpression sur la carte
 
+Notre configuration se contente d'autoriser le zoom avant/arrière via la molette et d'afficher également des boutons +/- pour se faire :
+```javascript
+$scope.defaults = {
+  zoomControlPosition: 'topleft',
+  scrollWheelZoom: true
+}
+```
 Chaque couche est caractérisée par un nom, un type (i.e. format) et une URL d'accès aux données. Les différentes couches de fond cartographique sont sélectionnables via un menu intégré à la carte (en haut à droite Figure 4). Par exemple la couche de base proposée par OpenStreetMap est configuré comme suit :
-```json
-{
-  name: 'OpenStreetMap',
-  type: 'xyz',
-  url: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  layerOptions: {
-      subdomains: ['a', 'b', 'c'],
-      attribution: '© OpenStreetMap contributors',
-      continuousWorld: true
-  }
+```javascript
+$scope.layers = { 
+  baselayers: [{
+    name: 'OpenStreetMap',
+    type: 'xyz',
+    url: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    layerOptions: {
+        subdomains: ['a', 'b', 'c'],
+        attribution: '© OpenStreetMap contributors',
+        continuousWorld: true
+  }]
 }
 ```
 Nous utiliserons la couche des marqueurs pour ajouter un simple marqueur indiquant le point de départ du chemin en indiquant ses coordonnées et un message apparaissant sous forme de bulle d'information : 
-```json
-{
+```javascript
+$scope.markers.you = {
   lat: track.waypoints[1],
   lng: track.waypoints[0],
   message: "You are here"
@@ -171,8 +179,44 @@ Nous utiliserons la couche des marqueurs pour ajouter un simple marqueur indiqua
 
 ### Contrôleur
 
-Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL (fonction `findOne()`). Ensuite il configure une couche de données au format GeoJSON 
+Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL (fonction `findOne()`). Ensuite il configure la couche de données au format GeoJSON à partir du résultat de la requête dédiée sur notre API (voir article précédent). La dernière instruction permet de recentrer la carte sur l'étendue géographique du chemin afin d'obtenir le résultat de la Figure 4 :
 ```javascript
+'use strict';
+
+// Contrôleur utilisé pour afficher un chemin sur une carte
+angular.module('mean.application').controller('TrackMapController', ['$scope', '$http', '$stateParams', 'TrackService', 'leafletData',
+  function($scope, $http, $stateParams, TrackService, leafletData) {
+    
+    // Données chargées de façon aynchrone
+    $scope.geoJSON = {};
+    $scope.markers = {};
+
+    //Récupère un chemin via son ID
+    $scope.findOne = function() {
+      TrackService.get({
+        trackId: $stateParams.trackId
+      }, function(track) {
+        $scope.track = track;
+        // Récupération des données au format GeoJSON
+        $http.get('/api/track.GeoJSON/' + track._id).success(function(data, status) {
+            angular.extend($scope, {
+                geoJSON: {
+                    data: data,
+                    style: {
+                        weight: 5,
+                        color: 'red'
+                    }
+                }
+            });
+        });
+        leafletData.getMap().then(function(map) {
+          // Zoom sur le chemin
+          map.fitBounds( [ [track.bbox[1], track.bbox[0]], [track.bbox[3], track.bbox[2]] ] );
+        });
+      });
+    };
+  }
+]);
 ```
 
 ### Vue
