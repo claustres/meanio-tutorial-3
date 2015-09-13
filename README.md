@@ -135,9 +135,19 @@ Les fonds de carte de ce type sont généralement découpées en tuiles (i.e. im
 
 ![Figure 3](Figure3.png "Figure 3 : Visualisation exagérée des tuiles d'OpenStreetMap autour de Melbourne (Tiled web map Stevage by Stevage - Own work. Licensed under CC BY-SA 4.0 via Commons)")
 
-Pour la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
+Pour la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application. 
 
 ### Directive
+
+Pour ce faire il faut rajouter `"angular-leaflet-directive": "latest"` dans le fichier `bower.json` à la racine de votre dossier applicatif et exécuter `bower install`. Ensuite il faut modifier le **app.js** du module applicatif pour rajouter les fichiers nécessaires à l'aggrégation (voir article précédent) :
+```javascript
+// Dépendances AngularJS du module
+Application.angularDependencies(['mean.system', 'mean.users', 'leaflet-directive']);
+Application.aggregateAsset('css', '../../../../../../bower_components/leaflet/dist/leaflet.css');
+// La priorité permet de s'assurer que la librairie est chargée avant la directive
+Application.aggregateAsset('js', '../../../../../../bower_components/leaflet/dist/leaflet.js', {weight: -1});
+Application.aggregateAsset('js', '../../../../../../bower_components/angular-leaflet-directive/dist/angular-leaflet-directive.js');
+```
 
 La directive se configure principalement via les attributs suivants :
 
@@ -233,9 +243,13 @@ La vue se contente d'instancier la directive et de binder les variables appropri
 
 ## Vue 3D
 
+Plusieurs librairies Open Source permettent de visualiser des données géographiques sur un globe virtuel 3D comme [GlobWeb](https://github.com/TPZF/GlobWeb) ou [WebGLEarth](https://github.com/webglearth/webglearth2) mais j'ai choisi d'utiliser [Cesium](http://cesiumjs.org/) pour sa large communauté et sa simplicité (en version 1.5 lors du codage). Pour ce faire il faut rajouter `"cesium": "1.5"` dans le fichier `bower.json` à la racine de votre dossier applicatif et exécuter `bower install`. Ensuite il faudra vous rendre dans le dossier d'installation et exécuter `ant` pour générer la version minifiée des sources.
+
 ### Service
 
 ### Directive
+
+Il n'existe pas de directive réellement "officielle" 
 
 ### Contrôleur
 
