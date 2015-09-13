@@ -94,7 +94,7 @@ angular.module('mean.application').config(['$stateProvider',
 
 #### Mise à jour des vues
 
-Pour la présentation des chemins (sous forme de liste ou sous forme unitaire) nous avions utilisé précédemment des [panels](http://getbootstrap.com/components/#panels) Bootstrap. L'en-tête (classe CSS *panel-heading*) contenait notamment les actions réalisables par l'utilisateur (e.g. éditer ou effacer) sous forme d'icônes, auxquelles nous rajoutons la possibilité d'ouvrir la vue cartographique ou 3D dans **public/views/Track.html** :
+Pour la présentation des chemins (sous forme de liste ou sous forme unitaire) nous avions utilisé précédemment des [panels](http://getbootstrap.com/components/#panels) Bootstrap. L'en-tête (classe CSS *panel-heading*) contenait notamment les actions réalisables par l'utilisateur (e.g. éditer ou effacer) sous forme d'icônes, auxquelles nous rajoutons la possibilité d'ouvrir la vue cartographique ou 3D (Figure 1) dans **public/views/Track.html** :
 ```html
 <!-- Nom du chemin -->
 <div class="panel panel-default">
@@ -120,6 +120,10 @@ Pour la présentation des chemins (sous forme de liste ou sous forme unitaire) n
 ```
 
 ![Figure 1](Figure1.png "Figure 1 : ajout dans la vue listant les chemins les actions d'accès à la vue cartographique ou 3D")
+
+Pour rappel le formulaire de création ou d'édition d'un chemin (Figure 2) défini dans **public/views/TrackEditor.html** permet d'ingérer un itinéraire GPS au format KML ou GPX via la sélection d'un fichier. Par souci de simplicité le fichier est directement lu par l'application côté client et le contenu passé dans la requête HTTP, ce qui pose problème sur des fichiers "normaux" car par défaut Express configure une limite de 100 Kb pour la charge utile des requêtes JSON (voir https://github.com/expressjs/body-parser).
+
+> **Trucs & Astuces** : Je vous conseille d'utiliser de petits fichiers avec cette application au risque de voir fleurir des erreurs HTTP 500 lors de la création ou de la mise à jour d'un chemin (message Express `Error: request entity too large`). Vous pouvez également configurer la taille par défaut via une instruction du type `app.use(express.json({limit: '50mb'}));` à l'initialisation d'Express. Néanmoins aujourd'hui il vous sera nécessaire de modifier directement le code de MEAN.IO pour se faire car cette option n'a pas encore été prévue dans les fichiers de configuration. Vous pouvez également utiliser des outils dédiés tels que le package MEAN.IO (upload)[http://mean.io/#!/packages/53ccd40e56eac633a3eee335] ou (ng-file-upload)[https://github.com/danialfarid/ng-file-upload] qui se basent sur les *Form Data*.
 
 ![Figure 2](Figure2.png "Figure 2 : vue permettant de créer un nouveau chemin ou d'éditer un chemin sélectionné")
 
