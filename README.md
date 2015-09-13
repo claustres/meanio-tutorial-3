@@ -179,7 +179,7 @@ $scope.markers.you = {
 
 ### Contrôleur
 
-Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL (fonction `findOne()`). Ensuite il configure la couche de données au format GeoJSON à partir du résultat de la requête dédiée sur notre API (voir article précédent). La dernière instruction permet de recentrer la carte sur l'étendue géographique du chemin afin d'obtenir le résultat de la Figure 4 :
+Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL grâce à la fonction `findOne()`. Ensuite il configure la couche de données au format GeoJSON à partir du résultat de la requête dédiée sur notre API (voir article précédent). La dernière instruction permet de recentrer la carte sur l'étendue géographique du chemin afin d'obtenir le résultat de la Figure 4 :
 ```javascript
 'use strict';
 
@@ -221,7 +221,7 @@ angular.module('mean.application').controller('TrackMapController', ['$scope', '
 
 ### Vue
 
-
+La vue se contente d'instancier la directive et de binder les variables appropriés du scope sur les attributs dédiés :
 ```html
 <div data-ng-init="findOne()">
   <!-- Ajout d'une carte Leaflet -->
