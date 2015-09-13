@@ -10,8 +10,6 @@ Voici le dernier article de la série consacrée à MEAN.IO, après la présenta
 
 Nous avions défini dans l'article précédent le schéma MongoDB de l'objet unique manipulé par notre application qui est un itinéraire GPS ('track' en anglais). Un tel chemin est simplement décrit par une liste de positions GPS acquises par le capteur. Chaque point est repéré en coordonnées géographiques : longitude, latitude et altitue. A part l'utilisateur qui l'a créé, un titre et un descriptif, le chemin contenait donc un tableau de ces coordonnées. Afin de localiser plus simplement le chemin sur une carte nous allons rajouter un champ contenant l'étendue géographique, traditionnellement nommé BBox (Bounding Box), car mathématiquement il correspond à la plus petite "boîte" en deux dimensions qui englobe tous les points du chemin. Concrètement ce rectangle est défini par un point sud-ouest contenant la longitude et la latitude minimales et un point nord-est contenant la longitude et la latitude maximales, nous stockerons ces 4 valeurs sous la forme d'un tableau. Ceci nous permettra de recentrer la vue cartographique sur la zone concernée pour ne pas avoir à rechercher sur la carte. Nous rajoutons donc au fichier **TrackModel.js** dans le dossier **models** du module le code suivant pour le schéma et la fonction d'importation des données :
 ```javascript
-'use strict';
-
 // Déclaration du schéma du modèle 'Track'
 var TrackSchema = new mongoose.Schema({
   ...
@@ -191,8 +189,6 @@ $scope.markers.you = {
 
 Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL grâce à la fonction `findOne()`. Ensuite il configure la couche de données au format GeoJSON à partir du résultat de la requête dédiée sur notre API (voir article précédent). La dernière instruction permet de recentrer la carte sur l'étendue géographique du chemin afin d'obtenir le résultat de la Figure 4 :
 ```javascript
-'use strict';
-
 // Contrôleur utilisé pour afficher un chemin sur une carte
 angular.module('mean.application').controller('TrackMapController', ['$scope', '$http', '$stateParams', 'TrackService', 'leafletData',
   function($scope, $http, $stateParams, TrackService, leafletData) {
@@ -243,13 +239,42 @@ La vue se contente d'instancier la directive et de binder les variables appropri
 
 ## Vue 3D
 
-Plusieurs librairies Open Source permettent de visualiser des données géographiques sur un globe virtuel 3D comme [GlobWeb](https://github.com/TPZF/GlobWeb) ou [WebGLEarth](https://github.com/webglearth/webglearth2) mais j'ai choisi d'utiliser [Cesium](http://cesiumjs.org/) pour sa large communauté et sa simplicité (en version 1.5 lors du codage). Pour ce faire il faut rajouter `"cesium": "1.5"` dans le fichier `bower.json` à la racine de votre dossier applicatif et exécuter `bower install`. Ensuite il faudra vous rendre dans le dossier d'installation et exécuter `ant` pour générer la version minifiée des sources.
+Plusieurs librairies Open Source permettent de visualiser des données géographiques sur un globe virtuel 3D comme [GlobWeb](https://github.com/TPZF/GlobWeb) ou [WebGLEarth](https://github.com/webglearth/webglearth2) mais j'ai choisi d'utiliser [Cesium](http://cesiumjs.org/) pour sa large communauté et sa simplicité (en version 1.5 lors du codage). Pour ce faire il faut rajouter `"cesium": "1.5"` dans le fichier `bower.json` à la racine de votre dossier applicatif et exécuter `bower install`. Ensuite il faudra vous rendre dans le dossier d'installation et exécuter `ant` pour générer la version minifiée des sources. Ensuite il faut modifier le **app.js** du module applicatif pour rajouter les fichiers nécessaires à l'aggrégation (voir article précédent) :
+```javascript
+Application.aggregateAsset('css', '../../../../../../bower_components/cesium/Build/CesiumUnminified/Widgets/widgets.css');
+Application.aggregateAsset('js', '../../../../../../bower_components/cesium/Build/CesiumUnminified/Cesium.js', {weight: -1});
+```
 
 ### Service
 
 ### Directive
 
-Il n'existe pas de directive réellement "officielle" 
+Il n'existe pas de directive AngularJS réellement "officielle", j'ai donc créé une simple directive permettant d'instancier une vue 3D Cesium sur un élément HTML. Elle configure par défaut une couche de données image et une couche topographique pour disposer d'un terrain en 3D.
+
+```javascript
+directive("cesium", ['Cesium', function (Cesium) {
+  return {
+    restrict: "E",
+    controllerAs: "TrackGlobeController",
+    link: function (scope, element, attributes) {
+      var options = {
+        //Start in Columbus Viewer
+        sceneMode : Cesium.SceneMode.SCENE3D,
+        sceneModePicker : false,
+        scene3DOnly : true,
+        homeButton : false,
+        geocoder : false,
+        navigationHelpButton : true,
+        baseLayerPicker : true
+      }
+      scope.viewer = new Cesium.Viewer(element[0], options);
+      // Set default values for providers
+      scope.viewer._baseLayerPicker._viewModel.selectedImagery =       scope.viewer._baseLayerPicker._viewModel.imageryProviderViewModels[1];
+      scope.viewer._baseLayerPicker._viewModel.selectedTerrain = scope.viewer._baseLayerPicker._viewModel.terrainProviderViewModels[1];
+    }
+  }
+}
+```
 
 ### Contrôleur
 
