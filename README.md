@@ -123,7 +123,7 @@ Pour la présentation des chemins (sous forme de liste ou sous forme unitaire) n
 
 Pour rappel le formulaire de création ou d'édition d'un chemin (Figure 2) défini dans **public/views/TrackEditor.html** permet d'ingérer un itinéraire GPS au format KML ou GPX via la sélection d'un fichier. Par souci de simplicité le fichier est directement lu par l'application côté client et le contenu passé dans la requête HTTP, ce qui pose problème sur des fichiers "normaux" car par défaut Express configure une limite de 100 Kb pour la charge utile des requêtes JSON (voir https://github.com/expressjs/body-parser).
 
-> **Trucs & Astuces** : Je vous conseille d'utiliser de petits fichiers avec cette application au risque de voir fleurir des erreurs HTTP 500 lors de la création ou de la mise à jour d'un chemin (message Express `Error: request entity too large`). Vous pouvez également configurer la taille par défaut via une instruction du type `app.use(express.json({limit: '50mb'}));` à l'initialisation d'Express. Néanmoins aujourd'hui il vous sera nécessaire de modifier directement le code de MEAN.IO pour se faire car cette option n'a pas encore été prévue dans les fichiers de configuration. Vous pouvez également utiliser des outils dédiés tels que le package MEAN.IO (upload)[http://mean.io/#!/packages/53ccd40e56eac633a3eee335] ou (ng-file-upload)[https://github.com/danialfarid/ng-file-upload] qui se basent sur les *Form Data*.
+> **Trucs & Astuces** : Je vous conseille d'utiliser de petits fichiers avec cette application au risque de voir fleurir des erreurs HTTP 500 lors de la création ou de la mise à jour d'un chemin (message Express `Error: request entity too large`). Vous pouvez également configurer la taille par défaut via une instruction du type `app.use(express.json({limit: '50mb'}));` à l'initialisation d'Express. Néanmoins aujourd'hui il vous sera nécessaire de modifier directement le code de MEAN.IO pour se faire car cette option n'a pas encore été prévue dans les fichiers de configuration (voir le fichier **ExpressEngine.js** dans le module node *meanio*). Vous pouvez également utiliser des outils dédiés tels que le package MEAN.IO (upload)[http://mean.io/#!/packages/53ccd40e56eac633a3eee335] ou (ng-file-upload)[https://github.com/danialfarid/ng-file-upload] qui se basent sur les *Form Data* pour disposer d'un transfert de fichier fiable.
 
 ![Figure 2](Figure2.png "Figure 2 : vue permettant de créer un nouveau chemin ou d'éditer un chemin sélectionné")
 
@@ -135,6 +135,10 @@ La gestion de données cartographiques est un domaine qui nécessite un travail 
 Concernant la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
 
 ### Directive
+
+```html
+
+```
 
 ### Contrôleur
 
