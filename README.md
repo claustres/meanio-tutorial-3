@@ -132,17 +132,37 @@ Pour rappel le formulaire de création ou d'édition d'un chemin (Figure 2) déf
 
 La gestion de données cartographiques est un domaine qui nécessite un travail algorithmique important, afin d'assurer des temps d'accès rapides, tant le volume de données peut être conséquent. Imaginez par exemple que l'on couvre aujourd'hui la terre entière avec des images satellite à une résolution de quelques dizaines de centimères. Une telle image sur une zone de 20 kilomètres carrés a une taille qui avoisine le milliard de pixels et pèse plusieurs gigaoctets même compressée. Accéder à une base de données mondiale de ce type nécessite de pouvoir naviguer à travers des dizaines téraoctets de données. Heureusement, des services mettant à disposition de telles données sont aujourd'hui accessibles gratuitement sur internet, comme par exemple [OpenStreetMap](https://www.openstreetmap.org) que nous utiliserons pour nous fournir un fond de carte sur lequel nous viendrons afficher nos tracés GPS.
 
+**TODO** parler de la multirésolution
+
 Concernant la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
 
 ### Directive
 
-```html
+La directive se configure principalement via les attributs suivants :
 
-```
+ * **defaults** : objet définissant la configuration de la carte (e.g. contrôles actifs)
+ * **center** : objet contenant les coordonnées du point central par défaut ainsi que le niveau de zoom
+ * **layers** : liste des couchesdisponibles pour le fond cartographique
+ * **markers** : liste de marqueurs (i.e. icônes) disposés sur la carte
+ * **geojson** : une couche de données au format GeoJSON affichée en surimpression sur la carte
+
+Chaque couche est caractérisée par un nom, un type (i.e. format) et une URL d'accès aux données. Les différentes couches de fond cartographique sont sélectionnables via un menu intégré à la carte (en haut à droite Figure 3).
 
 ### Contrôleur
 
+Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL (fonction `findOne()`). Ensuite il configure une couche de données au format GeoJSON 
+```javascript
+```
+
 ### Vue
+
+
+```html
+<div data-ng-init="findOne()">
+  <!-- Ajout d'une carte Leaflet -->
+  <leaflet center="center" layers="layers" geojson="geoJSON" defaults="defaults" markers="markers" width="100%" height="512px"/>  
+</div>
+```
 
 ![Figure 3](Figure3.png "Figure 3 : vue cartographique d'un chemin tracé en rouge, le marqueur bleu indiquant le point de départ")
 
