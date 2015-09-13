@@ -258,7 +258,6 @@ directive("cesium", ['Cesium', function (Cesium) {
     controllerAs: "TrackGlobeController",
     link: function (scope, element, attributes) {
       var options = {
-        //Start in Columbus Viewer
         sceneMode : Cesium.SceneMode.SCENE3D,
         sceneModePicker : false,
         scene3DOnly : true,
