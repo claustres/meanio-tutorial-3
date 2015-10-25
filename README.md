@@ -10,8 +10,6 @@ Voici le dernier article de la série consacrée à MEAN.IO, après la présenta
 
 Nous avions défini dans l'article précédent le schéma MongoDB de l'objet unique manipulé par notre application qui est un itinéraire GPS ('track' en anglais). Un tel chemin est simplement décrit par une liste de positions GPS acquises par le capteur. Chaque point est repéré en coordonnées géographiques : longitude, latitude et altitue. A part l'utilisateur qui l'a créé, un titre et un descriptif, le chemin contenait donc un tableau de ces coordonnées. Afin de localiser plus simplement le chemin sur une carte nous allons rajouter un champ contenant l'étendue géographique, traditionnellement nommé BBox (Bounding Box), car mathématiquement il correspond à la plus petite "boîte" en deux dimensions qui englobe tous les points du chemin. Concrètement ce rectangle est défini par un point sud-ouest contenant la longitude et la latitude minimales et un point nord-est contenant la longitude et la latitude maximales, nous stockerons ces 4 valeurs sous la forme d'un tableau. Ceci nous permettra de recentrer la vue cartographique sur la zone concernée pour ne pas avoir à rechercher sur la carte. Nous rajoutons donc au fichier **TrackModel.js** dans le dossier **models** du module le code suivant pour le schéma et la fonction d'importation des données :
 ```javascript
-'use strict';
-
 // Déclaration du schéma du modèle 'Track'
 var TrackSchema = new mongoose.Schema({
   ...
@@ -123,7 +121,7 @@ Pour la présentation des chemins (sous forme de liste ou sous forme unitaire) n
 
 Pour rappel le formulaire de création ou d'édition d'un chemin (Figure 2) défini dans **public/views/TrackEditor.html** permet d'ingérer un itinéraire GPS au format KML ou GPX via la sélection d'un fichier. Par souci de simplicité le fichier est directement lu par l'application côté client et le contenu passé dans la requête HTTP, ce qui pose problème sur des fichiers "normaux" car par défaut Express configure une limite de 100 Kb pour la charge utile des requêtes JSON (voir https://github.com/expressjs/body-parser).
 
-> **Trucs & Astuces** : Je vous conseille d'utiliser de petits fichiers avec cette application au risque de voir fleurir des erreurs HTTP 500 lors de la création ou de la mise à jour d'un chemin (message Express `Error: request entity too large`). Vous pouvez également configurer la taille par défaut via une instruction du type `app.use(express.json({limit: '50mb'}));` à l'initialisation d'Express. Néanmoins aujourd'hui il vous sera nécessaire de modifier directement le code de MEAN.IO pour se faire car cette option n'a pas encore été prévue dans les fichiers de configuration (voir le fichier **ExpressEngine.js** dans le module node *meanio*). Vous pouvez également utiliser des outils dédiés tels que le package MEAN.IO (upload)[http://mean.io/#!/packages/53ccd40e56eac633a3eee335] ou (ng-file-upload)[https://github.com/danialfarid/ng-file-upload] qui se basent sur les *Form Data* pour disposer d'un transfert de fichier fiable.
+> **Trucs & Astuces** : Je vous conseille d'utiliser de petits fichiers avec cette application au risque de voir fleurir des erreurs HTTP 500 lors de la création ou de la mise à jour d'un chemin (message Express `Error: request entity too large`). Vous pouvez également configurer la taille par défaut via une instruction du type `app.use(express.json({limit: '50mb'}));` à l'initialisation d'Express. Néanmoins aujourd'hui il vous sera nécessaire de modifier directement le code de MEAN.IO pour se faire car cette option n'a pas encore été prévue dans les fichiers de configuration (voir le fichier **ExpressEngine.js** dans le module node *meanio*). Vous pouvez également utiliser des outils dédiés tels que le package MEAN.IO [upload](http://mean.io/#!/packages/53ccd40e56eac633a3eee335) ou [ng-file-upload](https://github.com/danialfarid/ng-file-upload) couplés à [multer](https://github.com/expressjs/multer) qui se basent sur les *Form Data* pour disposer d'un transfert de fichier fiable.
 
 ![Figure 2](Figure2.png "Figure 2 : vue permettant de créer un nouveau chemin ou d'éditer un chemin sélectionné")
 
@@ -133,11 +131,21 @@ La gestion de données cartographiques est un domaine qui nécessite un travail 
 
 Les fonds de carte de ce type sont généralement découpées en tuiles (i.e. images) de petite taille et décomposés sur plusieurs niveaux géographiques (échelles ou niveaux de résolution). L'idée générale pour obtenir un affichage fluide est, en fonction de la zone visualisée par l'utilisateur, d'identifier et de télécharger uniquement les tuiles visibles et dont la résolution est la plus adaptée à l'écran. Les tuiles présentent en général un grand nombre de niveaux de zoom, de la vue mondiale au détail de la rue, mais leur nombre à l'écran dépasse rarement quelques dizaines (Figure 3).
 
-![Figure 3](Figure3.png "Figure 3 : Visualisation exagérée des tuiles d'OpenStreetMap autour de Melbourne (Credits "Tiled web map Stevage" by Stevage - Own work. Licensed under CC BY-SA 4.0 via Commons)")
+![Figure 3](Figure3.png "Figure 3 : Visualisation exagérée des tuiles d'OpenStreetMap autour de Melbourne (Tiled web map Stevage by Stevage - Own work. Licensed under CC BY-SA 4.0 via Commons)")
 
-Pour la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application.
+Pour la visualisation de données cartographique, les deux librairies Open Source les plus connues sont probablement à ce jour [OpenLayers](http://openlayers.org/) et [Leaflet](http://leafletjs.com/). David Rubert a eu la bonne idée d'initier des projets Open Source (auxquels j'essaye de contribuer) pour encapsuler ces deux librairies via des directives AngularJS, il s'agit de : [angular-openlayers-directive](https://github.com/tombatossals/angular-openlayers-directive) et [angular-leaflet-directive](https://github.com/tombatossals/angular-leaflet-directive). Nous allons utiliser cette dernière pour notre application. 
 
 ### Directive
+
+Pour ce faire il faut rajouter `"angular-leaflet-directive": "latest"` dans le fichier `bower.json` à la racine de votre dossier applicatif et exécuter `bower install`. Ensuite il faut modifier le **app.js** du module applicatif pour rajouter les fichiers nécessaires à l'aggrégation (voir article précédent) :
+```javascript
+// Dépendances AngularJS du module
+Application.angularDependencies(['mean.system', 'mean.users', 'leaflet-directive']);
+Application.aggregateAsset('css', '../../../../../../bower_components/leaflet/dist/leaflet.css');
+// La priorité permet de s'assurer que la librairie est chargée avant la directive
+Application.aggregateAsset('js', '../../../../../../bower_components/leaflet/dist/leaflet.js', {weight: -1});
+Application.aggregateAsset('js', '../../../../../../bower_components/angular-leaflet-directive/dist/angular-leaflet-directive.js');
+```
 
 La directive se configure principalement via les attributs suivants :
 
@@ -179,10 +187,8 @@ $scope.markers.you = {
 
 ### Contrôleur
 
-Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL (fonction `findOne()`). Ensuite il configure la couche de données au format GeoJSON à partir du résultat de la requête dédiée sur notre API (voir article précédent). La dernière instruction permet de recentrer la carte sur l'étendue géographique du chemin afin d'obtenir le résultat de la Figure 4 :
+Le contrôleur de la vue cartographique récupère tout d'abord l'ID du chemin à visualiser dans l'URL grâce à la fonction `findOne()`. Ensuite il configure la couche de données au format GeoJSON à partir du résultat de la requête dédiée sur notre API (voir article précédent). La dernière instruction permet de recentrer la carte sur l'étendue géographique du chemin afin d'obtenir le résultat de la Figure 4 :
 ```javascript
-'use strict';
-
 // Contrôleur utilisé pour afficher un chemin sur une carte
 angular.module('mean.application').controller('TrackMapController', ['$scope', '$http', '$stateParams', 'TrackService', 'leafletData',
   function($scope, $http, $stateParams, TrackService, leafletData) {
@@ -221,7 +227,7 @@ angular.module('mean.application').controller('TrackMapController', ['$scope', '
 
 ### Vue
 
-
+La vue se contente d'instancier la directive et de binder les variables appropriés du scope sur les attributs dédiés :
 ```html
 <div data-ng-init="findOne()">
   <!-- Ajout d'une carte Leaflet -->
@@ -233,15 +239,90 @@ angular.module('mean.application').controller('TrackMapController', ['$scope', '
 
 ## Vue 3D
 
-### Service
+Plusieurs librairies Open Source permettent de visualiser des données géographiques sur un globe virtuel 3D comme [GlobWeb](https://github.com/TPZF/GlobWeb) ou [WebGLEarth](https://github.com/webglearth/webglearth2) mais j'ai choisi d'utiliser [Cesium](http://cesiumjs.org/) pour sa large communauté et sa simplicité (en version 1.5 lors du codage). Pour ce faire il faut rajouter `"cesium": "1.5"` dans le fichier `bower.json` à la racine de votre dossier applicatif et exécuter `bower install`. Ensuite il faudra vous rendre dans le dossier d'installation et exécuter `ant` pour générer la version minifiée des sources. Ensuite il faut modifier le **app.js** du module applicatif pour rajouter les fichiers nécessaires à l'aggrégation (voir article précédent) :
+```javascript
+Application.aggregateAsset('css', '../../../../../../bower_components/cesium/Build/CesiumUnminified/Widgets/widgets.css');
+Application.aggregateAsset('js', '../../../../../../bower_components/cesium/Build/CesiumUnminified/Cesium.js', {weight: -1});
+```
+
+### Systèmes de coordonnées
+
+Afin de positionner un objet sur la Terre il est nécessaire de lui attribuer des coordonnées dans un repère lié à la Terre. Un tel repère doit donc être défini, et le cas échéant complété d'une représentation de la Terre, pour qu'une action de positionnement puisse être menée. Il existe aujourd'hui un grand nombre de systèmes de référence de coordonnées dont je présenterai les deux principaux.
+
+#### Système de coordonnées cartésiennes
+
+Un système de référence terrestre (SRT) est un repère cartésien tridimensionnel (OXYZ) que l’on positionne par rapport à la Terre de telle sorte que :
+
+ * l’origine O est le gravité de la Terre ;
+ * l’axe OZ est l’axe de rotation de la Terre ;
+ * le plane OXZ est le plan méridien origine ;
+ * le plan OXY est le plan de l’équateur.
+
+Un point de la croûte terrestre est considéré comme fixe dans un tel système. Un SRT est également appelé Système de Référence Géodésique ou encore "Earth-Centered, Earth-Fixed" (ECEF).
+
+#### Système de coordonnées géodésiques
+
+Il est relativement complexe de repérer un point sur Terre via ses coordonnées cartésiennes, aussi à un SRT est associé un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs. Il s’agit approximativement d’une sphère aplatie aux pôles. Dans un système géodésique ainsi défini, un point est localisé par ses coordonnées géographiques (ou géodésiques), exprimées en valeurs angulaires par la latitude L, la longitude G, et la hauteur géodésique h mesurée suivant la normale à l'ellipsoïde (h est petit à proximité de la surface terrestre). Le système géodésique le plus utilisé dans le monde est le système WGS 84, associé au système de positionnement GPS.
+
+![Figure 5](Figure5.png "Figure 5 : système de coordonnées cartésiennes Earth-Centered Earth-Fixed (ECEF) avec son plan tangent local (à gauche), système de coordonnées géodésique (à droite) et différence entre ellipsoïde (à gauche) et géoïde (à droite)")
+
+### Services
+
+Cesium étant une librairie JavaScript "standard" je l'ai encapsulé dans un service afin de pouvoir l'injecter dans d'autres composants AngularJS. Ceci permet de conserver une injection de dépendance à la mode AngularJS sans accéder de façon directe à un objet global:
+
+```javascript
+// Service utilisé pour accéder à la librairie Cesium via l'injection de dépendances
+angular.module('mean.application').factory('Cesium', [ function() {
+    return window.Cesium; // Assume que la librairie est déjà chargée dans la page
+  }
+]);
+```
+
+**TODO** : génération de route 3D
 
 ### Directive
 
+Il n'existe pas de directive AngularJS réellement "officielle", j'ai donc créé une directive permettant d'instancier une vue 3D Cesium sur un élément HTML (on parle de *Viewer*). Elle configure par défaut une couche de données image et une couche topographique pour disposer d'un terrain en 3D, l'ensemble des options possibles est détaillé sur https://cesiumjs.org/Cesium/Build/Documentation/Viewer.html.
+
+```javascript
+directive("cesium", ['Cesium', function (Cesium) {
+  return {
+    restrict: "E",
+    controllerAs: "TrackGlobeController",
+    link: function (scope, element, attributes) {
+      var options = {
+        sceneMode : Cesium.SceneMode.SCENE3D,
+        sceneModePicker : false,
+        scene3DOnly : true,
+        homeButton : false,
+        geocoder : false,
+        navigationHelpButton : true,
+        baseLayerPicker : true
+      }
+      scope.viewer = new Cesium.Viewer(element[0], options);
+      // Définit les valeurs par défaut pour les fournisseurs de données (images et terrain)
+      scope.viewer._baseLayerPicker._viewModel.selectedImagery =       scope.viewer._baseLayerPicker._viewModel.imageryProviderViewModels[1];
+      scope.viewer._baseLayerPicker._viewModel.selectedTerrain = scope.viewer._baseLayerPicker._viewModel.terrainProviderViewModels[1];
+    }
+  }
+}
+```
+
 ### Contrôleur
+
+**TODO**
 
 ### Vue
 
-![Figure 5](Figure5.png "Figure 5 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
+La vue est la partie la plus simple car elle se contente d'instancier la directive et de requêter le chemin en faisant appel au contrôleur :
+```html
+<div data-ng-init="findOne()">
+  <!-- Ajout d'un globe -->
+  <cesium/>  
+</div>
+```
+
+![Figure 6](Figure6.png "Figure 6 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
 
 ## Conclusion
 
