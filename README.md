@@ -245,11 +245,44 @@ Application.aggregateAsset('css', '../../../../../../bower_components/cesium/Bui
 Application.aggregateAsset('js', '../../../../../../bower_components/cesium/Build/CesiumUnminified/Cesium.js', {weight: -1});
 ```
 
-### Service
+### Systèmes de coordonnées
+
+Afin de positionner un objet sur la Terre il est nécessaire de lui attribuer des coordonnées dans un repère lié à la Terre. Un tel repère doit donc être défini, et le cas échéant complété d'une représentation de la Terre, pour qu'une action de positionnement puisse être menée. Il existe aujourd'hui un grand nombre de systèmes de référence de coordonnées dont je présenterai les deux principaux.
+
+#### Système de coordonnées cartésiennes
+
+Un système de référence terrestre (SRT) est un repère cartésien tridimensionnel (OXYZ) que l’on positionne par rapport à la Terre de telle sorte que :
+
+ * l’origine O est le gravité de la Terre ;
+ * l’axe OZ est l’axe de rotation de la Terre ;
+ * le plane OXZ est le plan méridien origine ;
+ * le plan OXY est le plan de l’équateur.
+
+Un point de la croûte terrestre est considéré comme fixe dans un tel système. Un SRT est également appelé Système de Référence Géodésique ou encore "Earth-Centered, Earth-Fixed" (ECEF).
+
+#### Système de coordonnées géodésiques
+
+Il est relativement complexe de repérer un point sur Terre via ses coordonnées cartésiennes, aussi à un SRT est associé un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs. Il s’agit approximativement d’une sphère aplatie aux pôles. Dans un système géodésique ainsi défini, un point est localisé par ses coordonnées géographiques (ou géodésiques), exprimées en valeurs angulaires par la latitude L, la longitude G, et la hauteur géodésique h mesurée suivant la normale à l'ellipsoïde (h est petit à proximité de la surface terrestre). Le système géodésique le plus utilisé dans le monde est le système WGS 84, associé au système de positionnement GPS.
+
+![Figure 5](Figure5.png "Figure 5 : système de coordonnées cartésiennes Earth-Centered Earth-Fixed (ECEF) avec son plan tangent local (à gauche), système de coordonnées géodésique (à droite) et différence entre ellipsoïde (à gauche) et géoïde (à droite)")
+
+### Services
+
+Cesium étant une librairie JavaScript "standard" je l'ai encapsulé dans un service afin de pouvoir l'injecter dans d'autres composants AngularJS. Ceci permet de conserver une injection de dépendance à la mode AngularJS sans accéder de façon directe à un objet global:
+
+```javascript
+// Service utilisé pour accéder à la librairie Cesium via l'injection de dépendances
+angular.module('mean.application').factory('Cesium', [ function() {
+    return window.Cesium; // Assume que la librairie est déjà chargée dans la page
+  }
+]);
+```
+
+**TODO** : génération de route 3D
 
 ### Directive
 
-Il n'existe pas de directive AngularJS réellement "officielle", j'ai donc créé une simple directive permettant d'instancier une vue 3D Cesium sur un élément HTML. Elle configure par défaut une couche de données image et une couche topographique pour disposer d'un terrain en 3D.
+Il n'existe pas de directive AngularJS réellement "officielle", j'ai donc créé une directive permettant d'instancier une vue 3D Cesium sur un élément HTML (on parle de *Viewer*). Elle configure par défaut une couche de données image et une couche topographique pour disposer d'un terrain en 3D, l'ensemble des options possibles est détaillé sur https://cesiumjs.org/Cesium/Build/Documentation/Viewer.html.
 
 ```javascript
 directive("cesium", ['Cesium', function (Cesium) {
@@ -267,7 +300,7 @@ directive("cesium", ['Cesium', function (Cesium) {
         baseLayerPicker : true
       }
       scope.viewer = new Cesium.Viewer(element[0], options);
-      // Set default values for providers
+      // Définit les valeurs par défaut pour les fournisseurs de données (images et terrain)
       scope.viewer._baseLayerPicker._viewModel.selectedImagery =       scope.viewer._baseLayerPicker._viewModel.imageryProviderViewModels[1];
       scope.viewer._baseLayerPicker._viewModel.selectedTerrain = scope.viewer._baseLayerPicker._viewModel.terrainProviderViewModels[1];
     }
@@ -277,9 +310,19 @@ directive("cesium", ['Cesium', function (Cesium) {
 
 ### Contrôleur
 
+**TODO**
+
 ### Vue
 
-![Figure 5](Figure5.png "Figure 5 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
+La vue est la partie la plus simple car elle se contente d'instancier la directive et de requêter le chemin en faisant appel au contrôleur :
+```html
+<div data-ng-init="findOne()">
+  <!-- Ajout d'un globe -->
+  <cesium/>  
+</div>
+```
+
+![Figure 6](Figure6.png "Figure 6 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
 
 ## Conclusion
 
