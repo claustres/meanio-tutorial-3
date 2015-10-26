@@ -258,17 +258,17 @@ Un système de référence terrestre (SRT) est un repère cartésien tridimensio
  * le plane OXZ est le plan méridien origine ;
  * le plan OXY est le plan de l’équateur.
 
-Un point de la croûte terrestre est considéré comme fixe dans un tel système. Un SRT est également appelé Système de Référence Géodésique ou encore "Earth-Centered, Earth-Fixed" (ECEF).
+Un point de la croûte terrestre est considéré comme fixe dans un tel système car le repère "tourne" en même temps que la Terre. Il est repéré par ses coordonnées cartésiennes géocentriques tridimensionnelles : X, Y, Z. Un SRT est également appelé Système de Référence Géodésique ou encore "Earth-Centered, Earth-Fixed" (ECEF).
 
 #### Système de coordonnées géodésiques
 
-Il est relativement complexe de repérer un point sur Terre via ses coordonnées cartésiennes, aussi à un SRT est associé un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs. Il s’agit approximativement d’une sphère aplatie aux pôles. Dans un système géodésique ainsi défini, un point est localisé par ses coordonnées géographiques (ou géodésiques), exprimées en valeurs angulaires par la latitude L, la longitude G, et la hauteur géodésique h mesurée suivant la normale à l'ellipsoïde (h est petit à proximité de la surface terrestre). Le système géodésique le plus utilisé dans le monde est le système WGS 84, associé au système de positionnement GPS.
+Comme il est relativement complexe de repérer un point sur Terre via ses coordonnées cartésiennes, est associé à un SRT un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs. Il s’agit approximativement d’une sphère aplatie aux pôles qui est une simplification du géoïde : la surface équipotentielle de référence du champ de pesanteur terrestre. Dans un système géodésique ainsi défini, un point est localisé par ses coordonnées géographiques (ou géodésiques), exprimées en valeurs angulaires par la latitude, la longitude, et la hauteur géodésique h mesurée suivant la normale à l'ellipsoïde (h est petit à proximité de la surface terrestre). Le système géodésique le plus utilisé dans le monde est le système WGS 84, associé au système de positionnement GPS.
 
 ![Figure 5](Figure5.png "Figure 5 : système de coordonnées cartésiennes Earth-Centered Earth-Fixed (ECEF) avec son plan tangent local (à gauche), système de coordonnées géodésique (à droite) et différence entre ellipsoïde (à gauche) et géoïde (à droite)")
 
 ### Services
 
-Cesium étant une librairie JavaScript "standard" je l'ai encapsulé dans un service afin de pouvoir l'injecter dans d'autres composants AngularJS. Ceci permet de conserver une injection de dépendance à la mode AngularJS sans accéder de façon directe à un objet global:
+Cesium étant une librairie JavaScript "standard" je l'ai tout d'abord encapsulé dans un service afin de pouvoir l'injecter dans d'autres composants AngularJS. Ceci permet de conserver une injection de dépendance à la mode AngularJS sans accéder de façon directe à un objet global:
 
 ```javascript
 // Service utilisé pour accéder à la librairie Cesium via l'injection de dépendances
@@ -277,6 +277,8 @@ angular.module('mean.application').factory('Cesium', [ function() {
   }
 ]);
 ```
+
+Ensuite, j'ai créé un service dédié à la création du chemin suivi en 3D. En effet, pour représenter une animation 3D Cesium se base sur un format interne nommé [CZML](https://github.com/AnalyticalGraphicsInc/cesium/wiki/CZML-Guide) qu'il nous faura donc générer.
 
 **TODO** : génération de route 3D
 
