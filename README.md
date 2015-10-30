@@ -245,27 +245,6 @@ Application.aggregateAsset('css', '../../../../../../bower_components/cesium/Bui
 Application.aggregateAsset('js', '../../../../../../bower_components/cesium/Build/CesiumUnminified/Cesium.js', {weight: -1});
 ```
 
-### Systèmes de coordonnées
-
-Afin de positionner un objet sur la Terre il est nécessaire de lui attribuer des coordonnées dans un repère lié à la Terre. Un tel repère doit donc être défini, et le cas échéant complété d'une représentation de la Terre, pour qu'une action de positionnement puisse être menée. Il existe aujourd'hui un grand nombre de systèmes de référence de coordonnées dont je présenterai les deux principaux.
-
-#### Système de coordonnées cartésiennes
-
-Un système de référence terrestre (SRT) est un repère cartésien tridimensionnel (OXYZ) que l’on positionne par rapport à la Terre de telle sorte que :
-
- * l’origine O est le gravité de la Terre ;
- * l’axe OZ est l’axe de rotation de la Terre ;
- * le plane OXZ est le plan méridien origine ;
- * le plan OXY est le plan de l’équateur.
-
-Un point de la croûte terrestre est considéré comme fixe dans un tel système car le repère "tourne" en même temps que la Terre. Il est repéré par ses coordonnées cartésiennes géocentriques tridimensionnelles : X, Y, Z. Un SRT est également appelé Système de Référence Géodésique ou encore "Earth-Centered, Earth-Fixed" (ECEF).
-
-#### Système de coordonnées géodésiques
-
-Comme il est relativement complexe de repérer un point sur Terre via ses coordonnées cartésiennes, est associé à un SRT un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs. Il s’agit approximativement d’une sphère aplatie aux pôles qui est une simplification du géoïde : la surface équipotentielle de référence du champ de pesanteur terrestre. Dans un système géodésique ainsi défini, un point est localisé par ses coordonnées géographiques (ou géodésiques), exprimées en valeurs angulaires par la latitude, la longitude, et la hauteur géodésique h mesurée suivant la normale à l'ellipsoïde (h est petit à proximité de la surface terrestre). Le système géodésique le plus utilisé dans le monde est le système WGS 84, associé au système de positionnement GPS.
-
-![Figure 5](Figure5.png "Figure 5 : système de coordonnées cartésiennes Earth-Centered Earth-Fixed (ECEF) avec son plan tangent local (à gauche), système de coordonnées géodésique (à droite) et différence entre ellipsoïde (à gauche) et géoïde (à droite)")
-
 ### Services
 
 Cesium étant une librairie JavaScript "standard" je l'ai tout d'abord encapsulé dans un service afin de pouvoir l'injecter dans d'autres composants AngularJS. Ceci permet de conserver une injection de dépendance à la mode AngularJS sans accéder de façon directe à un objet global:
@@ -278,9 +257,107 @@ angular.module('mean.application').factory('Cesium', [ function() {
 ]);
 ```
 
-Ensuite, j'ai créé un service dédié à la création du chemin suivi en 3D. En effet, pour représenter une animation 3D Cesium se base sur un format interne nommé [CZML](https://github.com/AnalyticalGraphicsInc/cesium/wiki/CZML-Guide) qu'il nous faura donc générer.
+Ensuite, j'ai créé un service dédié à la création du chemin suivi en 3D. En effet, pour représenter une animation 3D Cesium se base sur un format interne nommé [CZML](https://github.com/AnalyticalGraphicsInc/cesium/wiki/CZML-Guide) qu'il nous faura donc générer. De plus il faut pouvoir convertir le chemin depuis le système géodésique utilisé par le GPS vers un repère 3D utilisé par Cesium, en préambule je vous propose de découvrir les différents systèmes de coordonnées qui devront être manipulés.
 
-**TODO** : génération de route 3D
+#### Systèmes de coordonnées
+
+Afin de positionner un objet sur la Terre il est nécessaire de lui attribuer des coordonnées dans un repère lié à la Terre. Un tel repère doit donc être défini, et le cas échéant complété d'une représentation de la Terre, pour qu'une action de positionnement puisse être menée. Il existe aujourd'hui un grand nombre de systèmes de référence de coordonnées dont je présenterai les deux principaux.
+
+##### Système de coordonnées cartésiennes
+
+Un système de référence terrestre (SRT) est un repère cartésien tridimensionnel (OXYZ) que l’on positionne par rapport à la Terre de telle sorte que :
+
+ * l’origine O est le gravité de la Terre ;
+ * l’axe OZ est l’axe de rotation de la Terre ;
+ * le plane OXZ est le plan méridien origine ;
+ * le plan OXY est le plan de l’équateur.
+
+Un point de la croûte terrestre est considéré comme fixe dans un tel système car le repère "tourne" en même temps que la Terre. Il est repéré par ses coordonnées cartésiennes géocentriques tridimensionnelles : X, Y, Z. Un SRT est également appelé Système de Référence Géodésique ou encore "Earth-Centered, Earth-Fixed" (ECEF).
+
+##### Système de coordonnées géodésiques
+
+Comme il est relativement complexe de repérer un point sur Terre via ses coordonnées cartésiennes, est associé à un SRT un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs. Il s’agit approximativement d’une sphère aplatie aux pôles qui est une simplification du géoïde : la surface équipotentielle de référence du champ de pesanteur terrestre. Dans un système géodésique ainsi défini, un point est localisé par ses coordonnées géographiques (ou géodésiques), exprimées en valeurs angulaires par la latitude, la longitude, et la hauteur géodésique h mesurée suivant la normale à l'ellipsoïde (h est petit à proximité de la surface terrestre). Le système géodésique le plus utilisé dans le monde est le système WGS 84, associé au système de positionnement GPS.
+
+![Figure 5](Figure5.png "Figure 5 : système de coordonnées cartésiennes Earth-Centered Earth-Fixed (ECEF) avec son plan tangent local (à gauche), système de coordonnées géodésique (à droite) et différence entre ellipsoïde (à gauche) et géoïde (à droite)")
+
+#### Génération du chemin en 3D
+
+Dans Cesium une position en système de coordonnées géodésique est un objet de type `Cesium.Cartographic` et une position 3D un objet de type `Cesium.Cartesian3`. Nous écrivons dans notre service une première fonction permettant de transformer notre chemin stocké en base au format géographique vers un chemin en coordonnées 3D, la transformation aura lieu "en place" puisque chaque point possède trois coordonnées quelque soit le système (X, Y et Z ou longitude, latitude et altitude) :
+
+```javascript
+// Service utilisé pour accéder à l'API REST des chemins
+angular.module('mean.application').factory('TrackGenerator', ['Cesium',
+function (Cesium) {
+  // Conversion depuis tableau de coordonnées géographiques vers cartésiennes
+  TrackGenerator.cartographicToCartesian = function(waypoints) {
+	for (var i = 0; i < waypoints.length / 3; i++) {
+		var cartographicPosition = Cesium.Cartographic.fromDegrees(waypoints[3*i], waypoints[3*i+1], waypoints[3*i+2]);
+		var position = new Cesium.Cartesian3();
+		Cesium.Ellipsoid.WGS84.cartographicToCartesian(cartographicPosition, position);
+	
+		waypoints[3*i] = position.x;
+		waypoints[3*i+1] = position.y;
+		waypoints[3*i+2] = position.z;
+	}
+}
+}]);
+```  
+
+Ensuite nous ajoutons une nouvelle fonction qui utilisera la première et génèrera l'animation 3D au format CZML à partir du chemin. La partie délicate consiste à affecter à chaque point du chemin un temps pour créer une animation qui soit réaliste. En effet, le GPS échantillonne la position à une fréquence fixe (par exemple un point toutes les 5 secondes) et il manque donc de l'information entre deux points d'échantillonnage pour avoir un mouvement continue. Pour éviter d'obtenir des "sauts" entre les positions lors de la visulisation 3D (ce qui semblerait peu réaliste) la position entre 
+
+```javascript
+// Génère une animation 3D au format CZML à partir d'un chemin en coordonnées cartographiques
+  TrackGenerator.generateCzml = function(waypoints) {
+	// La scène CZML contient :
+	// - l'icône qui représentera le véhicule (nommé 'VehicleIcon')
+	// - le chemin suivi par le véhicule et utilisé pour interpoler sa position (nommé 'Vehicle')
+	// Le chemin est donné comme un tableau de coordonnées cartographiques, donc sans référence par rapport au sol (i.e. altitude).
+	// La position réelle au niveau du sol sera calculée en temps-réel lors de l'animation.
+	var builtInCzml = [ ... ]; // Voir code complet pour détails
+	
+	var cartesianRoute = waypoints.slice();
+	this.cartographicToCartesian( cartesianRoute );
+	
+	// Définit la date et l'heure de départ
+	var epoch = Cesium.JulianDate.now();
+	var previousPosition;
+	var timeStep = 0;
+	
+	// L'animation 3D est définie sous la forme d'une liste de temps/position
+	for (var i = 0; i < waypoints.length / 3; i++) {
+		var position = new Cesium.Cartesian3(cartesianRoute[3*i], cartesianRoute[3*i+1], cartesianRoute[3*i+2]);
+		
+		if ( Cesium.defined( previousPosition ) )
+		{
+			var distance = Cesium.Cartesian3.distance(previousPosition, position);
+			// Calcul du pas de temps, on considère une vitesse de 90 km/h soit environ 25 m/s
+			timeStep += distance / 25;
+		}
+		// Pas de temps
+		builtInCzml[2].position.cartesian[4*i] = timeStep;
+		// Position
+		builtInCzml[2].position.cartesian[4*i+1] = position.x;
+		builtInCzml[2].position.cartesian[4*i+2] = position.y;
+		builtInCzml[2].position.cartesian[4*i+3] = position.z;
+		
+		previousPosition = position;
+	}
+	
+	// Calcul de la date et l'heure de fin
+	var end = new Cesium.JulianDate();
+	Cesium.JulianDate.addSeconds(epoch, timeStep, end);
+	var timeInterval = new Cesium.TimeInterval({
+		start : epoch,
+		stop : end,
+		isStartTimeIncluded : true,
+		isStopTimeIncluded : true
+	});
+	builtInCzml[2].position.epoch = epoch.toString();
+	builtInCzml[2].availability = timeInterval.toString();
+	
+	return builtInCzml;
+};
+``` 
 
 ### Directive
 
