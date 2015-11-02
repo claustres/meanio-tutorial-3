@@ -426,6 +426,7 @@ angular.module('mean.application').controller('TrackGlobeController', ['$scope',
       return $scope.viewer.scene.globe.pick(ray, $scope.viewer.scene, groundPosition);
     }
 
+    // Recherche l'entité dans le contenu 3D
     var getTrackedEntity = function() {
       if (Cesium.defined($scope.lookAt)) {
         $scope.trackedEntity = $scope.viewer.dataSources.get(0).entities.getById($scope.lookAt);
