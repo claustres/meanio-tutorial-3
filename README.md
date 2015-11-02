@@ -394,10 +394,10 @@ directive("cesium", ['Cesium', function (Cesium) {
 ### Contrôleur
 
 Le contrôleur permet la mise en musique du service back-end et des éléments front-end :
-- récupération du chemin suivi via l'API REST
-- génération de l'animation 3D au format CZML
-- chargement de l'animation 3D dans Cesium
-- exécution de l'animation 3D
+* récupération du chemin suivi via l'API REST
+* génération de l'animation 3D au format CZML
+* chargement de l'animation 3D dans Cesium
+* exécution de l'animation 3D
 
 ### Vue
 
