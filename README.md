@@ -399,13 +399,14 @@ Le contrôleur permet la mise en musique du service back-end et des éléments f
 2. génération de l'animation 3D au format CZML via le service précédent,
 3. chargement de l'animation 3D dans Cesium,
 4. récupération de l'entité et de son icone,
-5. exécution de l'animation 3D.
+5. exécution de l'animation 3D,
+6. suivi de l'entité.
 
-L'essentiel du code se concentre sur cette dernière partie, les autres reposant sur des fonctions Cesium existantes. En effet, par défaut, le chemin suivi ne contient pas forcément l'altitude des points, ou s'il la contient elle n'est pas forcément adaptée à la résolution des données du terrain chargé dans Cesium. Ainsi, l'entité pourrait se retrouver aléatoirement positionnée au-dessus ou en-dessous du terrain 3D, suivant la précision des données terrain, ce qui peut poser des problèmes lors de la visualisation. Aussi nous allons recalculer en temps-réel la position 3D au niveau du sol. Pour ce faire nous utiliserons la technique du [lancer de rayon](https://fr.wikipedia.org/wiki/Lancer_de_rayon) qui permet de calculer l'intersection entre une demi-droite dans l'espace (définie par une origine et une direction) et un objet 3D (en l'occurence le terrain). A partir de la position à altitude zéro nous calculons l'origine du rayon de façon à ce qu'il soit au-dessus du terrain en lui affectant une altitude supérieure à toutes les montagnes connues. Ensuite nous calculons la direction du rayon comme le vecteur unitaire allant de cette origine à la position sur l'ellipsoïde, et donc pointant vers le centre de gravité terrestre. Enfin, nous demandons à Cesium de calculer l'intersection entre le rayon et la géométrie 3D du terrain.
+L'essentiel du code se concentre sur cette dernière partie, les autres reposant sur des fonctions Cesium existantes. En effet, par défaut, le chemin suivi ne contient pas forcément l'altitude des points, ou s'il la contient elle n'est pas forcément adaptée à la résolution des données du terrain chargé dans Cesium. Ainsi, l'entité pourrait se retrouver aléatoirement positionnée au-dessus ou en-dessous du terrain 3D, suivant la précision des données terrain, ce qui peut poser des problèmes lors de la visualisation. Aussi nous allons recalculer en temps-réel la position 3D au niveau du sol. Pour ce faire nous utiliserons la technique du [lancer de rayon](https://fr.wikipedia.org/wiki/Lancer_de_rayon) qui permet de calculer l'intersection entre une demi-droite dans l'espace (définie par une origine et une direction) et un objet 3D (en l'occurence le terrain). A partir de la position à altitude zéro (point rouge de la Figure 6) nous calculons l'origine du rayon de façon à ce qu'il soit au-dessus du terrain en lui affectant une altitude supérieure à toutes les montagnes connues. Ensuite nous calculons la direction du rayon comme le vecteur unitaire allant de cette origine à la position sur l'ellipsoïde, et donc pointant vers le centre de gravité terrestre. Enfin, nous demandons à Cesium de calculer l'intersection entre le rayon et la géométrie 3D du terrain (point vert de la Figure 6).
 
 ![Figure 6](Figure6.png "Figure 6 : lancer de rayon pour calculer la position sur le terrain 3D (point vert) à partir de la position géographique sur l'ellipsoïde (point rouge)")
 
-Au final le code du contrôleur est le suivant :
+Une fois cette position déterminée nous demandons à Cesium de calculer le repère local tangent à l'ellipsoïde qui permet d'être orienté de façon fixe par rapport au pôle Nord. Nous "attachons" alors le point de vue, i.e. la caméra virtuelle de la scène 3D, à ce repère pour que l'on ait l'impression que la caméra suive l'entité sur le chemin. Au final le code du contrôleur est le suivant :
 ```javascript
 // Contrôleur utilisé pour afficher un chemin sur un globe 3D
 angular.module('mean.application').controller('TrackGlobeController', ['$scope', '$http', '$stateParams', 'TrackService', 'TrackGenerator',
@@ -518,4 +519,6 @@ La vue est la partie la plus simple car elle se contente d'instancier la directi
 ![Figure 7](Figure7.png "Figure 7 : vue 3D animée d'un chemin où le marqueur suit le parcours, grâce à la barre "magnétoscope" en bas il est possible d'accélérer ou de se déplacer dans le temps")
 
 ## Conclusion
+
+Cet article a été l'occasion de découvrir le domaine de la cartographie 2D/3D et d'approfondir à nouveau votre connaissance du framework MEAN.io en le mettant en pratique sur un cas concret d’utilisation via l’intégration de librairies externes. J’espère que vous serez maintenant prêts à faire vos armes en développant vos propres modules ou applications.
 
