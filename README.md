@@ -257,7 +257,7 @@ angular.module('mean.application').factory('Cesium', [ function() {
 ]);
 ```
 
-Ensuite, j'ai créé un service dédié à la création du chemin suivi en 3D. En effet, pour représenter une animation 3D Cesium se base sur un format interne nommé [CZML](https://github.com/AnalyticalGraphicsInc/cesium/wiki/CZML-Guide) qu'il nous faura donc générer. De plus il faut pouvoir convertir le chemin depuis le système géodésique utilisé par le GPS vers un repère 3D utilisé par Cesium, en préambule je vous propose de découvrir les différents systèmes de coordonnées qui devront être manipulés.
+Ensuite, j'ai créé un service dédié à la création du chemin suivi en 3D. En effet, pour représenter une animation 3D Cesium se base sur un format interne nommé [CZML](https://github.com/AnalyticalGraphicsInc/cesium/wiki/CZML-Guide) qu'il nous faura donc générer. De plus, il faut pouvoir convertir le chemin depuis le système géodésique utilisé par le GPS vers un repère 3D utilisé par Cesium, en préambule je vous propose de découvrir ces différents systèmes de coordonnées qui devront être manipulés.
 
 #### Systèmes de coordonnées
 
@@ -303,7 +303,7 @@ function (Cesium) {
 }]);
 ```  
 
-Ensuite nous ajoutons une nouvelle fonction qui utilisera la première et génèrera l'animation 3D au format CZML à partir du chemin. La partie délicate consiste à affecter à chaque point du chemin un temps pour créer une animation qui soit réaliste. En effet, le GPS échantillonne la position à une fréquence fixe (par exemple un point toutes les 5 secondes) et il manque donc de l'information entre deux points d'échantillonnage pour avoir un mouvement continue. Pour éviter d'obtenir des "sauts" entre les positions lors de la visulisation 3D (ce qui semblerait peu réaliste) la position entre 
+Ensuite nous ajoutons une nouvelle fonction qui utilisera la première et génèrera l'animation 3D au format CZML à partir du chemin. La partie délicate consiste à affecter à chaque point du chemin un temps pour créer une animation qui soit réaliste. En effet, le GPS échantillonne la position à une fréquence fixe (par exemple un point toutes les 5 secondes) et il manque donc de l'information entre deux points d'échantillonnage pour avoir un mouvement continue. Pour éviter d'obtenir des "sauts" entre les positions lors de la visulisation 3D (ce qui semblerait peu réaliste) la position entre deux échantillons est "interpolée". L'interpolation numérique est une opération mathématique permettant de construire une courbe continue à partir d'un nombre fini de points. Cesium supporte plusieurs types d'interpolation allant de la plus simple qui est l'interpolation linéaire (la trajectoire entre deux points est supposée être une ligne droite) à des formes plus complexes telles que [l'interpolation Lagrangienne](https://fr.wikipedia.org/wiki/Interpolation_lagrangienne) que j'utilise et qui est basée sur un calcul polynômial permettant de représenter un mouvement de façon plus réaliste. Nous supposons une vitesse de base de 90 km/h pour rejouer l'animation dans un temps "raisonnable", le parcous réel pouvant avoir pris plusieurs heures. Dans l'animation 3D notre position sera représentée par l'icone d'un véhicule, le code de production du CZML est le suivant :
 
 ```javascript
 // Génère une animation 3D au format CZML à partir d'un chemin en coordonnées cartographiques
@@ -361,7 +361,7 @@ Ensuite nous ajoutons une nouvelle fonction qui utilisera la première et génè
 
 ### Directive
 
-Il n'existe pas de directive AngularJS réellement "officielle", j'ai donc créé une directive permettant d'instancier une vue 3D Cesium sur un élément HTML (on parle de *Viewer*). Elle configure par défaut une couche de données image et une couche topographique pour disposer d'un terrain en 3D, l'ensemble des options possibles est détaillé sur https://cesiumjs.org/Cesium/Build/Documentation/Viewer.html.
+Il n'existe pas de directive AngularJS réellement "officielle", j'ai donc créé une directive permettant d'instancier une vue 3D Cesium sur un élément HTML (on parle de *Viewer*). Elle configure par défaut une couche de données image et une couche topographique pour disposer d'un terrain en 3D, l'ensemble des options possibles est détaillé sur https://cesiumjs.org/Cesium/Build/Documentation/Viewer.html. Enfin, elle rajoute au scope une propriété `viewer` qui référence l'instance Cesium de la vue 3D et permet d'accéder au contenu 3D dans `viewer.scene` comme le point vue courant `viewer.scene.camera` ou le globe virtuel 3D `viewer.scene.globe` : 
 
 ```javascript
 directive("cesium", ['Cesium', function (Cesium) {
@@ -376,27 +376,35 @@ directive("cesium", ['Cesium', function (Cesium) {
         homeButton : false,
         geocoder : false,
         navigationHelpButton : true,
-        baseLayerPicker : true
+        baseLayerPicker : false
       }
       scope.viewer = new Cesium.Viewer(element[0], options);
-      // Définit les valeurs par défaut pour les fournisseurs de données (images et terrain)
-      scope.viewer._baseLayerPicker._viewModel.selectedImagery =       scope.viewer._baseLayerPicker._viewModel.imageryProviderViewModels[1];
-      scope.viewer._baseLayerPicker._viewModel.selectedTerrain = scope.viewer._baseLayerPicker._viewModel.terrainProviderViewModels[1];
+      // Définition des fournisseurs de données image/terrain à utiliser
+      scope.viewer.imageProvider = new Cesium.BingMapsImageryProvider({
+          url : '//dev.virtualearth.net'
+      });
+      scope.viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
+          url : '//assets.agi.com/stk-terrain/world'
+      });
     }
   }
-}
+}]);
 ```
 
 ### Contrôleur
 
-**TODO**
+Le contrôleur permet la mise en musique du service back-end et des éléments front-end :
+- récupération du chemin suivi via l'API REST
+- génération de l'animation 3D au format CZML
+- chargement de l'animation 3D dans Cesium
+- exécution de l'animation 3D
 
 ### Vue
 
 La vue est la partie la plus simple car elle se contente d'instancier la directive et de requêter le chemin en faisant appel au contrôleur :
 ```html
 <div data-ng-init="findOne()">
-  <!-- Ajout d'un globe -->
+  <!-- Ajout d'un globe 3D -->
   <cesium/>  
 </div>
 ```
