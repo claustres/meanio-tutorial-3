@@ -303,7 +303,7 @@ function (Cesium) {
 }]);
 ```  
 
-Ensuite nous ajoutons une nouvelle fonction qui utilisera la première et génèrera l'animation 3D au format CZML à partir du chemin. La partie délicate consiste à affecter à chaque point du chemin un temps pour créer une animation qui soit réaliste. En effet, le GPS échantillonne la position à une fréquence fixe (par exemple un point toutes les 5 secondes) et il manque donc de l'information entre deux points d'échantillonnage pour avoir un mouvement continue. Pour éviter d'obtenir des "sauts" entre les positions lors de la visulisation 3D (ce qui semblerait peu réaliste) la position entre deux échantillons est "interpolée". L'interpolation numérique est une opération mathématique permettant de construire une courbe continue à partir d'un nombre fini de points. Cesium supporte plusieurs types d'interpolation allant de la plus simple qui est l'interpolation linéaire (la trajectoire entre deux points est supposée être une ligne droite) à des formes plus complexes telles que [l'interpolation Lagrangienne](https://fr.wikipedia.org/wiki/Interpolation_lagrangienne) que j'utilise et qui est basée sur un calcul polynômial permettant de représenter un mouvement de façon plus réaliste. Nous supposons une vitesse de base de 90 km/h pour rejouer l'animation dans un temps "raisonnable", le parcous réel pouvant avoir pris plusieurs heures. Dans l'animation 3D notre position sera représentée par l'icone d'un véhicule, le code de production du CZML est le suivant :
+Ensuite nous ajoutons une nouvelle fonction qui utilisera la première et génèrera l'animation 3D au format CZML à partir du chemin. La partie délicate consiste à affecter à chaque point du chemin un temps pour créer une animation qui soit réaliste. En effet, le GPS échantillonne la position à une fréquence fixe (par exemple un point toutes les 5 secondes) et il manque donc de l'information entre deux points d'échantillonnage pour avoir un mouvement continue. Pour éviter d'obtenir des "sauts" entre les positions lors de la visulisation 3D (ce qui semblerait peu réaliste) la position entre deux échantillons est "interpolée". L'interpolation numérique est une opération mathématique permettant de construire une courbe continue à partir d'un nombre fini de points. Cesium supporte plusieurs types d'interpolation allant de la plus simple qui est l'interpolation linéaire (la trajectoire entre deux points est supposée être une ligne droite) à des formes plus complexes telles que [l'interpolation Lagrangienne](https://fr.wikipedia.org/wiki/Interpolation_lagrangienne) que j'utilise et qui est basée sur un calcul polynômial permettant de représenter un mouvement de façon plus réaliste. Nous supposons une vitesse de base de 90 km/h pour rejouer l'animation dans un temps "raisonnable", le parcous réel pouvant avoir pris plusieurs heures. Dans l'animation 3D nous définissons une entité (i.e. le "véhicule") qui suivra le chemin ainsi créé et l'icone d'un véhicule pour représenter notre position, le code de production du CZML est le suivant :
 
 ```javascript
 // Génère une animation 3D au format CZML à partir d'un chemin en coordonnées cartographiques
@@ -394,10 +394,108 @@ directive("cesium", ['Cesium', function (Cesium) {
 ### Contrôleur
 
 Le contrôleur permet la mise en musique du service back-end et des éléments front-end :
-* récupération du chemin suivi via l'API REST
-* génération de l'animation 3D au format CZML
-* chargement de l'animation 3D dans Cesium
-* exécution de l'animation 3D
+1. récupération du chemin suivi via l'API REST (de façon similaire à la carte 2D du précédent article)
+2. génération de l'animation 3D au format CZML
+3. chargement de l'animation 3D dans Cesium
+4. exécution de l'animation 3D
+
+```javascript
+// Contrôleur utilisé pour afficher un chemin sur un globe 3D
+angular.module('mean.application').controller('TrackGlobeController', ['$scope', '$http', '$stateParams', 'TrackService', 'TrackGenerator',
+  function($scope, $http, $stateParams, TrackService, TrackGenerator) {
+    // Projète au sol la position donnée
+    var clampToGround = function(position) {
+      // Position au sol à altitude 0
+      var cartographicPosition = new Cesium.Cartographic();
+      Cesium.Ellipsoid.WGS84.cartesianToCartographic(position, cartographicPosition);
+      // Origine du rayon à la même position mais au-dessus de tous les sommets existants
+      var cartographicOrigin = Cesium.Cartographic.clone(cartographicPosition);
+      cartographicOrigin.height = 20000; // Everest ~8000m
+      // Calcul du point 3D origine
+      var origin = new Cesium.Cartesian3();
+      Cesium.Ellipsoid.WGS84.cartographicToCartesian(cartographicOrigin, origin);
+      // Calcul de la direction du rayon : de l'origine vers le centre de la Terre
+      var direction = new Cesium.Cartesian3();
+      Cesium.Cartesian3.subtract(position, origin, direction);
+      Cesium.Cartesian3.normalize(direction, direction);
+      var ray = new Cesium.Ray(origin, direction);
+      
+      var groundPosition = new Cesium.Cartesian3();
+      // Intersection avec le sol
+      return $scope.viewer.scene.globe.pick(ray, $scope.viewer.scene, groundPosition);
+    }
+
+    var getTrackedEntity = function() {
+      if (Cesium.defined($scope.lookAt)) {
+        $scope.trackedEntity = $scope.viewer.dataSources.get(0).entities.getById($scope.lookAt);
+        if (Cesium.defined($scope.trackedEntity)) {
+          // Vitesse de défilement par défaut
+          $scope.viewer.clock.multiplier = 1;
+          // Récupérer l'icône représentant l'entité
+          $scope.trackedEntityIcon = $scope.viewer.dataSources.get(0).entities.getById($scope.lookAt + 'Icon');
+        }
+      }
+    }
+
+    // Charger l'objet source au format Czml
+    // L'argument lookAt est le nom de l'entité à suivre dans les données source
+    var loadSource = function(source, lookAt) {
+      $scope.lookAt = lookAt;
+      // Chargement de l'animation 3D
+      var dataSource = new Cesium.CzmlDataSource();
+      dataSource.load(source, 'Built-in CZML');
+      $scope.viewer.dataSources.add(dataSource);
+      // Récupération de l'entité suivant le chemin
+      getTrackedEntity();
+      // Positionnement du callback appelé à chaque pas d'exécution de l'animation
+      $scope.viewer.clock.onTick.addEventListener(function(clock) {
+        if ( Cesium.defined($scope.trackedEntity) ) {
+          // Récupération de la position courante
+          var cartographicPosition = new Cesium.Cartographic();
+          var position = $scope.trackedEntity.position.getValue(clock.currentTime);
+          Cesium.Ellipsoid.WGS84.cartesianToCartographic(position, cartographicPosition);
+          
+          // Calcul de la position projetée au sol
+          var groundPosition = clampToGround(position);
+          if ( Cesium.defined(groundPosition) ) {
+            // Mise à jour de la position 3D en conséquence
+            position = groundPosition;
+            Cesium.Ellipsoid.WGS84.cartesianToCartographic(groundPosition, cartographicPosition);
+            // Et positionnement de l'icone 
+            if ( Cesium.defined($scope.trackedEntityIcon) ) {
+              $scope.trackedEntityIcon.position = new Cesium.ConstantPositionProperty(groundPosition, Cesium.ReferenceFrame.FIXED);
+              var text = cartographicPosition.height.toFixed() + ' m';
+              $scope.trackedEntityIcon._label._text = new Cesium.ConstantProperty(text);
+            }
+          }
+          
+          // Calcul du repère local à la position
+          var transform = Cesium.Transforms.eastNorthUpToFixedFrame(position);
+          // Attachement du point de vue à ce repère
+          Cesium.Matrix4.clone(transform, $scope.viewer.scene.camera.transform);
+          $scope.viewer.scene.camera.constrainedAxis = Cesium.Cartesian3.UNIT_Z;
+        }
+      });
+    }
+
+    //Récupère un chemin via son ID
+    $scope.findOne = function() {
+      TrackService.get({
+        trackId: $stateParams.trackId
+      }, function(track) {
+        $scope.track = track;
+
+        // Position par défaut de la caméra
+        $scope.viewer.scene.camera.lookAt(
+          new Cesium.Cartesian3(-1500.0, -1500.0, 500.0),
+          Cesium.Cartesian3.ZERO,
+          Cesium.Cartesian3.UNIT_Z);
+        loadSource( TrackGenerator.generateCzml($scope.track.waypoints), "Vehicle");
+      });
+    };
+  }
+]);
+```
 
 ### Vue
 
